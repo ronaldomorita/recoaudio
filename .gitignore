@@ -1,0 +1,11 @@
+*.pyc
+wav
+mp3
+*.wav
+*.mp3
+.DS_Store
+*.cnf
+*.pyc
+staticfiles
+.env
+env_recoaudio
