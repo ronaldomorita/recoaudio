@@ -12,7 +12,7 @@ try:
     import queue as Queue
 except ImportError as ex:
     # Python 2
-    from Queue
+    import Queue
 
 import MySQLdb as mysql
 from MySQLdb.cursors import DictCursor
