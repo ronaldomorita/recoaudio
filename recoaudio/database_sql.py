@@ -5,7 +5,7 @@ import Queue
 import MySQLdb as mysql
 from MySQLdb.cursors import DictCursor
 
-from dejavu.database import Database
+from recoaudio.database import Database
 
 
 class SQLDatabase(Database):

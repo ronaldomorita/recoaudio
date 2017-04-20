@@ -1,5 +1,5 @@
-from dejavu.database import get_database, Database
-import dejavu.decoder as decoder
+from recoaudio.database import get_database, Database
+import recoaudio.decoder as decoder
 import fingerprint
 import multiprocessing
 import os
