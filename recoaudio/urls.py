@@ -16,6 +16,14 @@ Including another URLconf
 from django.conf.urls import url
 from django.contrib import admin
 
+import www.views
+
+# Examples:
+# url(r'^$', 'gettingstarted.views.home', name='home'),
+# url(r'^blog/', include('blog.urls')),
+
 urlpatterns = [
-    url(r'^admin/', admin.site.urls),
+    url(r'^$', www.views.index, name='index'),
+    url(r'^admin/', include(admin.site.urls)),
 ]
+
