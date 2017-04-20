@@ -58,8 +58,8 @@ class Dejavu(object):
 
             # don't refingerprint already fingerprinted files
             if decoder.unique_hash(filename) in self.songhashes_set:
-                print("%s already fingerprinted, continuing..." % (filename)
-)                continue
+                print("%s already fingerprinted, continuing..." % (filename))
+                continue
 
             filenames_to_fingerprint.append(filename)
 
