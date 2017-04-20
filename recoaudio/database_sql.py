@@ -6,12 +6,14 @@ try:
 except ImportError as ex:
     # Python 2
     from itertools import izip_longest
+
 try:
     # Python 3
     import queue as Queue
 except ImportError as ex:
     # Python 2
     import Queue
+
 try:
     # Python 3
     import MySQLdb as mysql
@@ -19,7 +21,12 @@ except ImportError as ex:
     # Python 2
     import mysqlclient as mysql
 
-from mysql.cursors import DictCursor
+try:
+    # Python 3
+    from MySQLdb.cursors import DictCursor
+except ImportError as ex:
+    # Python 2
+    from mysqlclient.cursors import DictCursor
 
 from recoaudio.database import Database
 
