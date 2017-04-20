@@ -3,19 +3,15 @@ from __future__ import absolute_import
 try:
     # Python 3
     from itertools import zip_longest as izip_longest
+    import queue as Queue
+    import MySQLdb as mysql
 except ImportError as ex:
     # Python 2
     from itertools import izip_longest
-try:
-
-    # Python 3
-    import queue as Queue
-except ImportError as ex:
-    # Python 2
     import Queue
+    import mysqlclient as mysql
 
-import MySQLdb as mysql
-from MySQLdb.cursors import DictCursor
+from mysql.cursors import DictCursor
 
 from recoaudio.database import Database
 
