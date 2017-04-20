@@ -2,7 +2,7 @@ from __future__ import absolute_import
 try:
     # Python 3
     from itertools import zip_longest as izip_longest
-except ImportError
+except ImportError as ex:
     # Python 2
     from itertools import izip_longest
 import Queue
