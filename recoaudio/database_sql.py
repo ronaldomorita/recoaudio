@@ -3,12 +3,20 @@ from __future__ import absolute_import
 try:
     # Python 3
     from itertools import zip_longest as izip_longest
-    import queue as Queue
-    import MySQLdb as mysql
 except ImportError as ex:
     # Python 2
     from itertools import izip_longest
+try:
+    # Python 3
+    import queue as Queue
+except ImportError as ex:
+    # Python 2
     import Queue
+try:
+    # Python 3
+    import MySQLdb as mysql
+except ImportError as ex:
+    # Python 2
     import mysqlclient as mysql
 
 from mysql.cursors import DictCursor
