@@ -5,8 +5,8 @@ mp3
 *.mp3
 .DS_Store
 *.cnf
-*.pyc
 staticfiles
 .env
 env_recoaudio
+env_dejavu
 nohup.out

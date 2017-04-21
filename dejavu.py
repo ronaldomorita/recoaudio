@@ -6,14 +6,14 @@ import json
 import warnings
 import argparse
 
-from recoaudio import Dejavu
-from recoaudio.recognize import FileRecognizer
-from recoaudio.recognize import MicrophoneRecognizer
+from dejavu import Dejavu
+from dejavu.recognize import FileRecognizer
+from dejavu.recognize import MicrophoneRecognizer
 from argparse import RawTextHelpFormatter
 
 warnings.filterwarnings("ignore")
 
-DEFAULT_CONFIG_FILE = "recoaudio.cnf"
+DEFAULT_CONFIG_FILE = "dejavu.cnf.SAMPLE"
 
 
 def init(configpath):

@@ -1,34 +1,11 @@
 from __future__ import absolute_import
+from itertools import izip_longest
+import Queue
 
-try:
-    # Python 3
-    from itertools import zip_longest as izip_longest
-except ImportError as ex:
-    # Python 2
-    from itertools import izip_longest
+import MySQLdb as mysql
+from MySQLdb.cursors import DictCursor
 
-try:
-    # Python 3
-    import queue as Queue
-except ImportError as ex:
-    # Python 2
-    import Queue
-
-try:
-    # Python 3
-    import MySQLdb as mysql
-except ImportError as ex:
-    # Python 2
-    import mysqlclient as mysql
-
-try:
-    # Python 3
-    from MySQLdb.cursors import DictCursor
-except ImportError as ex:
-    # Python 2
-    from mysqlclient.cursors import DictCursor
-
-from recoaudio.database import Database
+from dejavu.database import Database
 
 
 class SQLDatabase(Database):
