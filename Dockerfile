@@ -12,5 +12,8 @@ WORKDIR /opt/recoaudio
 
 RUN conda install portaudio numpy scipy matplotlib tk
 
+RUN  useradd -m paulo
+USER paulo
+
 #CMD gunicorn --bind 0.0.0.0:$PORT wsgi
 CMD gunicorn --bind 0.0.0.0:$PORT recoaudio.wsgi --log-file -
