@@ -5,6 +5,8 @@ import multiprocessing
 import os
 import traceback
 import sys
+import wave
+import subprocess
 
 
 class Dejavu(object):
@@ -42,6 +44,18 @@ class Dejavu(object):
             song_hash = song[Database.FIELD_FILE_SHA1]
             self.songhashes_set.add(song_hash)
 
+    def convert_pcm_to_wav(self, pcmfilename, wavfilename):
+        subprocess.call(['rm', '-f', wavfilename])
+        subprocess.call(['ffmpeg', '-f', 's16le', '-ar', '44.1k', '-ac', '1', '-i', pcmfilename, wavfilename])
+
+    def convert_pcm_to_wav_directory(self, path):
+        for pcmfilename, _ in decoder.find_files(path, ['.pcm']):
+            wavfilename = pcmfilename.replace('.pcm','.wav')
+            if os.path.exists(wavfilename):
+                print "%s already converted, continuing..." % pcmfilename
+                continue
+            self.convert_pcm_to_wav(pcmfilename, wavfilename)
+             
     def fingerprint_directory(self, path, extensions, nprocesses=None):
         # Try to use the maximum amount of processes if not given.
         try:
