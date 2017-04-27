@@ -45,8 +45,8 @@ class Dejavu(object):
             self.songhashes_set.add(song_hash)
 
     def convert_pcm_to_wav(self, pcmfilename, wavfilename):
-        subprocess.call(['rm', '-f', wavfilename])
-        subprocess.call(['ffmpeg', '-f', 's16le', '-ar', '44.1k', '-ac', '1', '-i', pcmfilename, wavfilename])
+        with open(os.devnull, 'w') as devnull:
+            subprocess.check_call(['ffmpeg', '-y', '-f', 's16le', '-ar', '44.1k', '-ac', '1', '-i', pcmfilename, wavfilename], stdout=devnull, stderr=subprocess.STDOUT)
 
     def convert_pcm_to_wav_directory(self, path):
         for pcmfilename, _ in decoder.find_files(path, ['.pcm']):
