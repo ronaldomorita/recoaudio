@@ -1,70 +1,57 @@
 # coding: utf-8
 import ra_recognize
 import json
+from datetime import datetime
 import cgi
+from cgi import escape
 import cgitb
 cgitb.enable()
 
 html = """
+<!DOCTYPE html>
+<head><META http-equiv="Content-Type" content="text/html; charset=UTF-8"></head>
 <html>
 <body>
     <h2>Detalhes do reconhecimento:</h2>
-    <p>Arquivo de upload: %(file_name)s</p>
     <p>
-        ID do áudio: %(song_id)s<br>
-        Nome do áudio: %(song_name)s<br>
+        Timestamp: %(timestamp)s<br>
+        Arquivo de upload: %(file_name)s<br>
+    </p>
+    <p>
+        ID do Ã¡udio: %(song_id)s<br>
+        Nome do Ã¡udio: %(song_name)s<br>
         file_sha1: %(file_sha1)s<br>
-        Nível de confiança: %(confidence)s<br>
+        NÃ­vel de confianÃ§a: %(confidence)s<br>
         offset (em segundos): %(offset_seconds)s<br>
         tempo para reconhecimento: %(match_time)s<br>
         offset: %(offset)s<br>
     </p>
-    <p>Original info: %(song)s</p>
 </body>
 </html>
 """
 
-def application(env, start_response):
-    #response_body = 'Hello RecoAudio!<br>' + str(song)
-    
-    ###POST###
-    form = cgi.FieldStorage(fp=env['wsgi.input'], environ=env)
-    file_name = 'There\'s a form' if form else 'No file uploaded'
-    if "recorded" in form:
-        fileitem = form["recorded"]
-        file_name = fileitem.filename or file_name
+def application(environ, start_response):
+    # get recorded file form POST
+    form = cgi.FieldStorage(fp=environ['wsgi.input'], environ=environ)
+    timestamp = '' if form else 'No form found'
+    file_name = 'No recorded file uploaded' if form else 'No form found'
+    if 'recorded' in form:
+        ts = cgi.escape(form.getvalue('ts',''))
+        timestamp = datetime.utcfromtimestamp(float(ts)/1000).strftime('%d/%m/%Y %H:%M:%S.%f')[:-3] if ts.isdigit() else timestamp
+        post_file = form['recorded']
+        if post_file.filename:
+            file_name = cgi.escape(post_file.filename)
+            # save recorded file to filesystem
+            with open('records/'+file_name, 'wb') as local_file:
+                local_file.write(post_file.file.read())
         
-    # the environment variable CONTENT_LENGTH may be empty or missing
-    #try:
-    #    request_body_size = int(env.get('CONTENT_LENGTH', 0))
-    #except (ValueError):
-    #    request_body_size = 0
-
-    # When the method is POST the variable will be sent
-    # in the HTTP request body which is passed by the WSGI server
-    # in the file like wsgi.input environment variable.
-    #request_body = env['wsgi.input'].read(request_body_size)
-    #d = parse_qs(request_body)
-    ###POST###
-
-    ###GET###
-    # Returns a dictionary in which the values are lists
-    #d = parse_qs(env['QUERY_STRING'])
-    ###GET###
-
-    # As there can be more than one value for a variable then
-    # a list is provided as a default value.
-    #age = d.get('age', [''])[0] # Returns the first age value
-    #hobbies = d.get('hobbies', []) # Returns a list of hobbies
-
-    # Always escape user input to avoid script injection
-    #age = escape(age)
-    #hobbies = [escape(hobby) for hobby in hobbies]
-
+    # recognize recorded file
     song = ra_recognize.recognize()
     jsong = json.loads(str(song).replace("'",'"'))
     
-    response_body = html % { # Fill the above html template in
+    # prepare response
+    response_body = html % {
+        'timestamp':      timestamp,
         'file_name':      file_name,
         'song_id':        str(jsong['song_id']        or 'Empty'),
         'song_name':      str(jsong['song_name']      or 'Empty'),
@@ -73,8 +60,6 @@ def application(env, start_response):
         'offset_seconds': str(jsong['offset_seconds'] or 'Empty'),
         'match_time':     str(jsong['match_time']     or 'Empty'),
         'offset':         str(jsong['offset']         or 'Empty'),
-        'song':           song or 'Empty',
     }
-
-    start_response('200 OK', [('Content-Type', 'text/html'),('Content-Length', str(len(response_body))),('charset','utf-8')])
+    start_response('200 OK', [('Content-Type', 'text/html; charset=UTF-8'),('Content-Length', str(len(response_body)))])
     return [response_body]

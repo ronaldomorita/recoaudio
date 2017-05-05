@@ -49,13 +49,22 @@ class Dejavu(object):
             subprocess.check_call(['ffmpeg', '-y', '-f', 's16le', '-ar', '44.1k', '-ac', '1', '-i', pcmfilename, wavfilename], stdout=devnull, stderr=subprocess.STDOUT)
 
     def convert_pcm_to_wav_directory(self, path):
+        filenames_already_converted = []
+        filenames_to_convert = []
+        
         for pcmfilename, _ in decoder.find_files(path, ['.pcm']):
             wavfilename = pcmfilename.replace('.pcm','.wav')
             if os.path.exists(wavfilename):
-                print "%s already converted, continuing..." % pcmfilename
+                #print "%s already converted, continuing..." % pcmfilename
+                filenames_already_converted.append(pcmfilename)
                 continue
             self.convert_pcm_to_wav(pcmfilename, wavfilename)
-             
+            filenames_to_convert.append(pcmfilename)
+        
+        converted_before = ('"' + '","'.join(filenames_already_converted) + '"').replace(path+'/','') if filenames_already_converted else ''
+        converted_now    = ('"' + '","'.join(filenames_to_convert) + '"').replace(path+'/','')        if filenames_to_convert        else ''
+        return '{"converted_before":[' + converted_before + '],"converted_now":[' + converted_now + ']}'
+        
     def fingerprint_directory(self, path, extensions, nprocesses=None):
         # Try to use the maximum amount of processes if not given.
         try:
@@ -67,14 +76,15 @@ class Dejavu(object):
 
         pool = multiprocessing.Pool(nprocesses)
 
+        filenames_already_fingerprinted = []
         filenames_to_fingerprint = []
+        
         for filename, _ in decoder.find_files(path, extensions):
-
             # don't refingerprint already fingerprinted files
             if decoder.unique_hash(filename) in self.songhashes_set:
-                print "%s already fingerprinted, continuing..." % filename
+                #print "%s already fingerprinted, continuing..." % filename
+                filenames_already_fingerprinted.append(filename)
                 continue
-
             filenames_to_fingerprint.append(filename)
 
         # Prepare _fingerprint_worker input
@@ -106,6 +116,10 @@ class Dejavu(object):
 
         pool.close()
         pool.join()
+        
+        fingerprinted_before = ('"' + '","'.join(filenames_already_fingerprinted) + '"').replace(path+'/','') if filenames_already_fingerprinted else ''
+        fingerprinted_now    = ('"' + '","'.join(filenames_to_fingerprint) + '"').replace(path+'/','')        if filenames_to_fingerprint        else ''
+        return '{"fingerprinted_before":[' + fingerprinted_before + '],"fingerprinted_now":[' + fingerprinted_now + ']}'
 
     def fingerprint_file(self, filepath, song_name=None):
         songname = decoder.path_to_songname(filepath)

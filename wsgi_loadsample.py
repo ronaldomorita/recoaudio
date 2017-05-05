@@ -1,76 +1,66 @@
-import ra_recognize
-from cgi import parse_qs, escape
+# coding: utf-8
+import ra_loadsamples
+import json
+import cgi
+from cgi import escape
+import cgitb
+cgitb.enable()
 
 html = """
+<!DOCTYPE html>
+<head><META http-equiv="Content-Type" content="text/html; charset=UTF-8"></head>
 <html>
 <body>
-   <h2>Load Sample</h2>
-   <form method="post" action="">
-        <p>
-           Age: <input type="text" name="age" value="%(age)s">
-        </p>
-        <p>
-            Hobbies:
-            <input
-                name="hobbies" type="checkbox" value="software"
-                %(checked-software)s
-            > Software
-            <input
-                name="hobbies" type="checkbox" value="tunning"
-                %(checked-tunning)s
-            > Auto Tunning
-        </p>
-        <p>
-            <input type="submit" value="Submit">
-        </p>
-    </form>
+    <h2>Arquivando amostra na base:</h2>
     <p>
-        Age: %(age)s<br>
-        Hobbies: %(hobbies)s
+        <b>Arquivo de upload:</b> %(file_name)s<br>
+    </p>
+    <p>
+        <h3>Status da geração de fingerprints:</h3>
+        <dl>
+            <dt><b>Convertidos anteriormente em .wav:</b></dt>
+%(converted_before)s
+            <dt><b>Convertidos agora em .wav:</b></dt>
+%(converted_now)s
+            <dt><b>Fingerprints gerados anteriormente:</b></dt>
+%(fingerprinted_before)s
+            <dt><b>Fingerprints gerados agora:</b></dt>
+%(fingerprinted_now)s
+        </dl>
     </p>
 </body>
 </html>
 """
 
-def application(env, start_response):
-
-    #song = ra_recognize.recognize()
-    #response_body = 'Hello RecoAudio!<br>' + str(song)
+def application(environ, start_response):
+    # get sample file form POST
+    form = cgi.FieldStorage(fp=environ['wsgi.input'], environ=environ)
+    file_name = 'No sample file uploaded' if form else 'No form found'
+    if 'sample' in form:
+        post_file = form['sample']
+        if post_file.filename:
+            file_name = cgi.escape(post_file.filename)
+            # save sample file to filesystem
+            with open('references/'+file_name, 'wb') as local_file:
+                local_file.write(post_file.file.read())
+        
+    # recognize sample file
+    result = ra_loadsamples.load()
+    jresult = json.loads(result)
     
-    ###POST###
-    # the environment variable CONTENT_LENGTH may be empty or missing
-    try:
-        request_body_size = int(env.get('CONTENT_LENGTH', 0))
-    except (ValueError):
-        request_body_size = 0
-
-    # When the method is POST the variable will be sent
-    # in the HTTP request body which is passed by the WSGI server
-    # in the file like wsgi.input environment variable.
-    request_body = env['wsgi.input'].read(request_body_size)
-    d = parse_qs(request_body)
-    ###POST###
-
-    ###GET###
-    # Returns a dictionary in which the values are lists
-    #d = parse_qs(env['QUERY_STRING'])
-    ###GET###
-
-    # As there can be more than one value for a variable then
-    # a list is provided as a default value.
-    age = d.get('age', [''])[0] # Returns the first age value
-    hobbies = d.get('hobbies', []) # Returns a list of hobbies
-
-    # Always escape user input to avoid script injection
-    age = escape(age)
-    hobbies = [escape(hobby) for hobby in hobbies]
-
-    response_body = html % { # Fill the above html template in
-        'checked-software': ('', 'checked')['software' in hobbies],
-        'checked-tunning': ('', 'checked')['tunning' in hobbies],
-        'age': age or 'Empty',
-        'hobbies': ', '.join(hobbies or ['No Hobbies?'])
+    # prepare response
+    separator = '</dd><dd>'
+    textdefault = '<dd>Nenhum arquivo</dd>'
+    converted_before     = '<dd>' + separator.join(f for f in jresult['converted_before']    ).encode('utf-8') + '</dd>' if jresult['converted_before']     else textdefault
+    converted_now        = '<dd>' + separator.join(f for f in jresult['converted_now']       ).encode('utf-8') + '</dd>' if jresult['converted_now']        else textdefault
+    fingerprinted_before = '<dd>' + separator.join(f for f in jresult['fingerprinted_before']).encode('utf-8') + '</dd>' if jresult['fingerprinted_before'] else textdefault
+    fingerprinted_now    = '<dd>' + separator.join(f for f in jresult['fingerprinted_now']   ).encode('utf-8') + '</dd>' if jresult['fingerprinted_now']    else textdefault
+    response_body = html % {
+        'file_name':            file_name,
+        'converted_before':     converted_before,
+        'converted_now':        converted_now,
+        'fingerprinted_before': fingerprinted_before,
+        'fingerprinted_now':    fingerprinted_now,
     }
-
-    start_response('200 OK', [('Content-Type', 'text/html'),('Content-Length', str(len(response_body)))])
+    start_response('200 OK', [('Content-Type', 'text/html; charset=UTF-8'),('Content-Length', str(len(response_body)))])
     return [response_body]
