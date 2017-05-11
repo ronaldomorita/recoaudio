@@ -64,6 +64,10 @@ class Dejavu(object):
         converted_before = ('"' + '","'.join(filenames_already_converted) + '"').replace(path+'/','') if filenames_already_converted else ''
         converted_now    = ('"' + '","'.join(filenames_to_convert) + '"').replace(path+'/','')        if filenames_to_convert        else ''
         return '{"converted_before":[' + converted_before + '],"converted_now":[' + converted_now + ']}'
+
+    def extract_audio_segment(self, input_filename, output_filename, start_second, end_second):
+        with open(os.devnull, 'w') as devnull:
+            subprocess.check_call(['ffmpeg', '-y', '-i', input_filename, '-ss', str(start_second), '-to', str(end_second), output_filename], stdout=devnull, stderr=subprocess.STDOUT)
         
     def fingerprint_directory(self, path, extensions, nprocesses=None):
         # Try to use the maximum amount of processes if not given.
