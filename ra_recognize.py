@@ -20,7 +20,13 @@ class AudioSegment:
         return self.end_position - self.start_position
     
     def contains_position(self, position):
-        return position > self.start_position and  position < self.end_position
+        return position > self.start_position and position < self.end_position
+    
+    def to_str(self):
+        return "From %s to %s seconds and file %s, got song id %s, song name %s, confidence %s" %(
+            str(self.start_position), str(self.end_position), self.file_name,
+            str(self.recognition_result['song_id']), str(self.recognition_result['song_name']), 
+            str(self.recognition_result['confidence']))
 
         
 class CheckpointResult:
@@ -30,6 +36,11 @@ class CheckpointResult:
         self.song_name = song_name
         self.confidence_avg = confidence_avg
         self.segments_analysed = segments_analysed
+        
+    def to_str(self):
+        list_segments_analysed = [s.to_str() for s in self.segments_analysed]
+        return "At second %s, got song id %s, song name %s, confidence average %s\r    Segments analysed to get this result:\n    %s" %(
+            str(self.checkpoint), str(self.song_id), self.song_name, str(self.confidence_avg), '\n    '.join(list_segments_analysed))
 
 
 class AudioSegmentHandler:
