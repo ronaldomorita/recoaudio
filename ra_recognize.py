@@ -4,7 +4,8 @@ from dejavu import Dejavu
 from dejavu.recognize import FileRecognizer
 
 warnings.filterwarnings("ignore")
-    
+
+
 class AudioSegment:
     def __init__(self, file_name, start_position, end_position):
         self.file_name = file_name
@@ -20,6 +21,16 @@ class AudioSegment:
     
     def contains_position(self, position):
         return position > self.start_position and  position < self.end_position
+
+        
+class CheckpointResult:
+    def __init__(self, checkpoint, song_id, song_name, confidence_avg, segments_analysed):
+        self.checkpoint = checkpoint
+        self.song_id = song_id
+        self.song_name = song_name
+        self.confidence_avg = confidence_avg
+        self.segments_analysed = segments_analysed
+
 
 class AudioSegmentHandler:
     # Expected amount of time (in seconds) of the original audio record.
@@ -42,7 +53,7 @@ class AudioSegmentHandler:
     segment_step = 2
     
     # Position of the inital checkpoint
-    initial_checkpoint = 3
+    first_checkpoint = 3
     
     # The amount of seconds between consecutive checkpoints
     checkpoint_step = 4
@@ -50,6 +61,7 @@ class AudioSegmentHandler:
     def __init__(self, djv):
         self.djv = djv
         self.segment_list = []
+        self.checkpoint_list = []
         
     def generate_segments(self, filepath):
         path = filepath[0:filepath.rfind('/')+1]
@@ -70,7 +82,27 @@ class AudioSegmentHandler:
         for s in self.segment_list:
             s.set_recognition_result(self.djv.recognize(FileRecognizer, s.file_name))
         return self
-        
+    
+    def compute_checkpoits(self):
+        checkpoint = self.first_checkpoint
+        while checkpoint <= self.total_time:
+            cp_segments = [s for s in self.segment_list if s.contains_position(checkpoint)]
+            cp_results = {}
+            max_confidence = 0
+            for seg in cp_segments:
+                key = str(seg.recognition_result['song_id'])+'_'+seg.recognition_result['song_name']
+                value = cp_results[key] + seg.recognition_result['confidence'] if cp_results.has_key(key) else seg.recognition_result['confidence']
+                cp_results[key] = value
+                max_confidence = value if value > max_confidence else max_confidence
+            if max_confidence:
+                for key in cp_results.keys():
+                    if cp_results[key] == max_confidence:
+                        self.checkpoint_list.append(CheckpointResult(
+                            checkpoint, int(key[0:key.find('_')]), key[key.find('_')+1:],
+                            max_confidence/(len(cp_segments)*1.0), cp_segments))
+                        break;
+            checkpoint += self.checkpoint_step
+        return self
         
 def recognize():
     # load config from a JSON file (or anything outputting a python dictionary)
@@ -83,10 +115,9 @@ def recognize():
         wavfilename = "records/recorded_converted.wav"
         djv.convert_pcm_to_wav(pcmfilename, wavfilename)
         
-        # cria a lista de segmentos e faz o reconhecimento de cada um
-        handler = AudioSegmentHandler(djv).generate_segments(wavfilename).recognize_segment_list()
+        # generate audio segments, recognize each segment and define the most probable audio for each checkpoint
+        handler = AudioSegmentHandler(djv).generate_segments(wavfilename).recognize_segment_list().compute_checkpoits()
                 
-        #print "From file we recognized: %s\n" % segment_list
-        return handler.segment_list
+        return handler
         
-    return ['["unable to open config"]']
+    return AudioSegmentHandler(None)

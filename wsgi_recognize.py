@@ -11,27 +11,48 @@ html = """
 <!DOCTYPE html>
 <head><META http-equiv="Content-Type" content="text/html; charset=UTF-8"></head>
 <html>
-<body>
+<body style="margin: 0px;">
 <!-- content-start -->
 <div style="background-color:#EEEEAA">
-    <h2>Detalhes do reconhecimento:</h2>
-    <p>
-        Timestamp: %(timestamp)s<br>
-    </p>
-%(file_content)s    
+  <h2>Detalhes do reconhecimento:</h2>
+  <p style="padding-left: 6px">
+    <b>Timestamp:</b> %(timestamp)s<br>
+  </p>
+%(checkpoints_content)s    
 </div>
 <!-- content-end -->
 </body>
 </html>
 """
 
-html_audio = """
-    <p>
-        File: %(file_info)s<br>
-        ID do áudio: %(song_id)s<br>
-        Nome do áudio: %(song_name)s<br>
-        Nível de confiança: %(confidence)s<br>
-    </p>
+html_checkpoint = """
+  <div style="background-color:%(checkpoint_color)s; width:98%%; margin-left: 1%%;">
+      <b>No segundo %(checkpoint)s</b><br>
+      <span style="color:#AA6600;"><b>Audio:</b> %(song_id)s: %(song_name)s</span><br>
+      <b>Confianca media:</b> %(confidence)s<br>
+      <b>resultado por segmento:</b>
+      <table>
+        <thead>
+          <tr>
+            <th>Trecho</th>
+            <th style="color:#AA6600;">Audio</th>
+            <th>Confianca</th.
+          </tr>
+        </thead>
+        <tboby>
+%(segments_content)s
+        </tbody>
+      </table>
+      <br>
+  </div>
+"""
+
+html_segment = """
+          <tr>
+            <td style="text-align: center;">%(file_info)s</td>
+            <td style="text-align: center; color:#AA6600;">%(song_id)s: %(song_name)s</td>
+            <td style="text-align: center;">%(confidence)s</td>
+          </tr>
 """
 
 def application(environ, start_response):
@@ -51,7 +72,7 @@ def application(environ, start_response):
                 local_file.write(post_file.file.read())
         
     # recognize recorded file
-    segments = ra_recognize.recognize()
+    handler = ra_recognize.recognize()
     
     # save history
     if ts.isdigit():
@@ -64,20 +85,33 @@ def application(environ, start_response):
                 with open('records/history/'+log_file_name, 'w') as log_file:
                     log_file.write('filename: '+hist_file_name+'\ntimestamp: '+timestamp+' ('+ts+')\nrecognized info: '+song)
     
-    # prepare file content
-    file_content = ""
-    for s in segments:
-        file_content += html_audio % {
-            'file_info':      s.file_name + ' ' + str(s.start_position) + ' ' + str(s.end_position),
-            'song_id':        str(s.recognition_result['song_id']),
-            'song_name':      str(s.recognition_result['song_name']),
-            'confidence':     str(s.recognition_result['confidence']),
+    # prepare checkpoint content
+    checkpoints_content = ""
+    checkpoint_color = '#F8F8F8'
+    for cp in handler.checkpoint_list:
+        # prepare segment content
+        segments_content = ''
+        for s in cp.segments_analysed:
+            segments_content += html_segment % {
+                'file_info':    str(s.start_position) + 's a ' + str(s.end_position) + 's',
+                'song_id':      str(s.recognition_result['song_id']),
+                'song_name':    str(s.recognition_result['song_name']),
+                'confidence':   str(s.recognition_result['confidence']),
+            }
+        checkpoints_content += html_checkpoint % {
+            'checkpoint':       str(cp.checkpoint),
+            'song_id':          str(cp.song_id),
+            'song_name':        cp.song_name,
+            'confidence':       str(cp.confidence_avg),
+            'segments_content': segments_content,
+            'checkpoint_color': checkpoint_color,
         }
+        checkpoint_color = '#E8E8E8' if checkpoint_color == '#F8F8F8' else '#F8F8F8'
     
     # prepare response
     response_body = html % {
-        'timestamp':      timestamp,
-        'file_content':   file_content,
+        'timestamp':            timestamp,
+        'checkpoints_content':  checkpoints_content,
     }
     #else:
     #    response_body = html % {
@@ -90,6 +124,6 @@ def application(environ, start_response):
     #        'match_time':     ' - ',
     #        'offset':         ' - ',
     #    }
-        
+    
     start_response('200 OK', [('Content-Type', 'text/html; charset=UTF-8'),('Content-Length', str(len(response_body)))])
-    return [response_body]
+    return [response_body.encode('utf-8')]
