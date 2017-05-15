@@ -4,6 +4,7 @@ import json
 import cgi
 from cgi import escape
 import cgitb
+import gzip
 cgitb.enable()
 
 html = """
@@ -43,6 +44,10 @@ def application(environ, start_response):
             # save sample file to filesystem
             with open('references/'+file_name, 'wb') as local_file:
                 local_file.write(post_file.file.read())
+            if file_name.endswith('.gz'):
+                with gzip.open('references/'+file_name, 'rb') as zip_file:
+                    with open('references/'+file_name.rstrip('.gz'), 'wb') as unzip_file:
+                        unzip_file.write(zip_file.read())
         
     # recognize sample file
     result = ra_loadsamples.load()

@@ -27,6 +27,11 @@ class AudioSegment:
             str(self.start_position), str(self.end_position), self.file_name,
             str(self.recognition_result['song_id']), str(self.recognition_result['song_name']), 
             str(self.recognition_result['confidence']))
+    
+    def to_str_sum(self):
+        return "%s (%s), from %s to %s seconds" %(
+            str(self.recognition_result['song_name']), str(self.recognition_result['confidence']), 
+            str(self.start_position), str(self.end_position))
 
         
 class CheckpointResult:
@@ -37,10 +42,21 @@ class CheckpointResult:
         self.confidence_avg = confidence_avg
         self.segments_analysed = segments_analysed
         
+    def get_sorted_segments_analysed(self):
+        sorted_by_confidence = sorted(self.segments_analysed, key=lambda seg: seg.recognition_result['confidence'], reverse=True)
+        sorted_list = [s for s in sorted_by_confidence if int(s.recognition_result['song_id']) == self.song_id]
+        sorted_list.extend([s for s in sorted_by_confidence if int(s.recognition_result['song_id']) != self.song_id])
+        return sorted_list
+        
     def to_str(self):
-        list_segments_analysed = [s.to_str() for s in self.segments_analysed]
-        return "At second %s, got song id %s, song name %s, confidence average %s\r    Segments analysed to get this result:\n    %s" %(
+        list_segments_analysed = [s.to_str() for s in self.get_sorted_segments_analysed()]
+        return "At second %s, got song id %s, song name %s, confidence average %s\n    Segments analysed to get this result:\n    %s" %(
             str(self.checkpoint), str(self.song_id), self.song_name, str(self.confidence_avg), '\n    '.join(list_segments_analysed))
+        
+    def to_str_sum(self):
+        list_segments_analysed = [s.to_str_sum() for s in self.get_sorted_segments_analysed()]
+        return "At second %s, %s (%s)\n    %s" %(
+            str(self.checkpoint), self.song_name, str(self.confidence_avg), '\n    '.join(list_segments_analysed))
 
 
 class AudioSegmentHandler:

@@ -67,9 +67,10 @@ def save_history(ts, handler):
         with open('records/history/'+hist_file_name, 'wb') as hist_file:
             hist_file.write(conv_file.read())
             with open('records/history/'+log_file_name, 'w') as log_file:
-                log_file.write('filename: %s\ntimestamp: %s (%s)\nrecognized info: '%(hist_file_name,timestamp_to_date(ts),ts))
-                list_ckeckpoints_str = [cp.to_str() for cp in handler.checkpoint_list]
+                log_file.write('filename: %s\ntimestamp: %s (%s)\nrecognized info:\n'%(hist_file_name,timestamp_to_date(ts),ts))
+                list_ckeckpoints_str = [cp.to_str_sum() for cp in handler.checkpoint_list]
                 log_file.write('\n'.join(list_ckeckpoints_str))
+                log_file.write('\n\n')
     
 def populate_response_body(ts, handler):
     checkpoints_content = ""
