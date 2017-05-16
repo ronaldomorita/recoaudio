@@ -58,8 +58,15 @@ class CheckpointResult:
         return "At second %s, %s (%s)\n    %s" %(
             str(self.checkpoint), self.song_name, str(self.confidence_avg), '\n    '.join(list_segments_analysed))
 
-
 class AudioSegmentHandler:
+
+    notification_base = {
+        1:"Compre hoje dois perfumes O Boticario e ganhe desconto de 20% no segundo",
+        2:"Super Ofeta Vest Casa hoje: bicama por R$600,00",
+    }
+    
+    song_notification_relation = {20:1, 23:2, 26:2}
+    
     # Expected amount of time (in seconds) of the original audio record.
     total_time = 30
     
@@ -89,6 +96,7 @@ class AudioSegmentHandler:
         self.djv = djv
         self.segment_list = []
         self.checkpoint_list = []
+        self.notification_list = {}
         
     def generate_segments(self, filepath):
         path = filepath[0:filepath.rfind('/')+1]
@@ -124,9 +132,14 @@ class AudioSegmentHandler:
             if max_confidence:
                 for key in cp_results.keys():
                     if cp_results[key] == max_confidence:
+                        song_id = int(key[0:key.find('_')])
+                        song_name = key[key.find('_')+1:]
                         self.checkpoint_list.append(CheckpointResult(
-                            checkpoint, int(key[0:key.find('_')]), key[key.find('_')+1:],
+                            checkpoint, song_id, song_name,
                             max_confidence/(len(cp_segments)*1.0), cp_segments))
+                        if self.song_notification_relation.has_key(song_id) and max_confidence >= 3.0:
+                            nofitication_id = self.song_notification_relation[song_id]
+                            self.notification_list[nofitication_id] = self.notification_base[nofitication_id] 
                         break;
             checkpoint += self.checkpoint_step
         return self

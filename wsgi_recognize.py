@@ -22,6 +22,7 @@ html = """
 %(checkpoints_content)s    
 </div>
 <!-- content-end -->
+%(notification_content)s
 </body>
 </html>
 """
@@ -55,6 +56,8 @@ html_segment = """
             <td style="text-align: center;">%(confidence)s</td>
           </tr>
 """
+
+html_notification = "<!-- notific: %(id)s|%(content)s notific-end -->\n"
 
 def timestamp_to_date(ts):
     return datetime.utcfromtimestamp(float(ts)/1000).strftime('%d/%m/%Y %H:%M:%S.%f')[:-3] if ts.isdigit() else ''
@@ -95,11 +98,20 @@ def populate_response_body(ts, handler):
         }
         checkpoint_color = '#E8E8E8' if checkpoint_color == '#F8F8F8' else '#F8F8F8'
     
+    notification_content = '\n'
+    if handler.notification_list:
+        for key in handler.notification_list.keys():
+            notification_content += html_notification % {
+                'id':           str(key),
+                'content':      handler.notification_list[key],
+            }
+    
     # prepare response
     date_timestamp = timestamp_to_date(ts) if ts.isdigit else 'No timestamp'
     response_body = html % {
         'timestamp':            date_timestamp,
         'checkpoints_content':  checkpoints_content,
+        'notification_content': notification_content,
     }
     return response_body.encode('utf-8')
    
