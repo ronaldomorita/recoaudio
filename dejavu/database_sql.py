@@ -82,6 +82,60 @@ class SQLDatabase(Database):
         Database.FIELD_FILE_SHA1,
         Database.FIELD_SONG_ID, Database.FIELD_SONG_ID, Database.FIELD_SONG_ID,
     )
+    
+    CREATE_OFFERS_TABLE = """
+        CREATE TABLE IF NOT EXISTS `offers` (
+          `offer_id` INT NOT NULL,
+          `offer_content` VARCHAR(500) NOT NULL,
+          `offer_description` VARCHAR(100) NULL,
+          PRIMARY KEY (`offer_id`))
+        ENGINE = InnoDB;"""
+
+    CREATE_SONG_OFFERS_TABLE = """
+        CREATE TABLE IF NOT EXISTS `song_offers` (
+          `song_id` MEDIUMINT UNSIGNED NOT NULL,
+          `offer_id` INT NOT NULL,
+          INDEX `fk_songs_idx` (`song_id` ASC),
+          INDEX `fk_offers_idx` (`offer_id` ASC),
+          PRIMARY KEY (`song_id`, `offer_id`),
+          CONSTRAINT `fk_songs`
+            FOREIGN KEY (`song_id`)
+            REFERENCES `songs` (`song_id`)
+            ON DELETE NO ACTION
+            ON UPDATE NO ACTION,
+          CONSTRAINT `fk_offers`
+            FOREIGN KEY (`offer_id`)
+            REFERENCES `offers` (`offer_id`)
+            ON DELETE NO ACTION
+            ON UPDATE NO ACTION)
+        ENGINE = InnoDB;"""
+
+    CREATE_OFFER_KEYWORDS_TABLE = """
+        CREATE TABLE IF NOT EXISTS `offer_keywords` (
+          `offer_keyword_id` INT NOT NULL,
+          `offer_id` INT NOT NULL,
+          PRIMARY KEY (`offer_keyword_id`),
+          INDEX `fk_offers1_idx` (`offer_id` ASC),
+          CONSTRAINT `fk_offers1`
+            FOREIGN KEY (`offer_id`)
+            REFERENCES `offers` (`offer_id`)
+            ON DELETE NO ACTION
+            ON UPDATE NO ACTION)
+        ENGINE = InnoDB;"""
+
+    CREATE_KEYWORD_SYNONYMS_TABLE = """
+        CREATE TABLE IF NOT EXISTS `keyword_synonyms` (
+          `keyword_synonym_id` INT NOT NULL,
+          `offer_keyword_id` INT NOT NULL,
+          `keyword_synonym_value` VARCHAR(100) NOT NULL,
+          PRIMARY KEY (`keyword_synonym_id`),
+          INDEX `fk_offer_keywords_idx` (`offer_keyword_id` ASC),
+          CONSTRAINT `fk_offer_keywords`
+            FOREIGN KEY (`offer_keyword_id`)
+            REFERENCES `offer_keywords` (`offer_keyword_id`)
+            ON DELETE NO ACTION
+            ON UPDATE NO ACTION)
+        ENGINE = InnoDB;"""
 
     # inserts (ignores duplicates)
     INSERT_FINGERPRINT = """
@@ -123,6 +177,19 @@ class SQLDatabase(Database):
     """ % (Database.FIELD_SONG_ID, Database.FIELD_SONGNAME, Database.FIELD_FILE_SHA1, Database.FIELD_FILE_SHA1,
            SONGS_TABLENAME, FIELD_FINGERPRINTED)
 
+    SELECT_SONG_OFFERS = """
+        SELECT song_offers.song_id, offers.offer_id, offers.offer_content
+          FROM song_offers
+            INNER JOIN offers ON song_offers.offer_id = offers.offer_id
+          ORDER BY song_offers.song_id, offers.offer_id;"""
+
+    SELECT_KEYWORD_OFFERS = """
+        SELECT o.offer_id, o.offer_content, ok.offer_keyword_id, ks.keyword_synonym_id, ks.keyword_synonym_value 
+          FROM offers o
+            INNER JOIN offer_keywords ok ON o.offer_id = ok.offer_id
+            INNER JOIN keyword_synonyms ks ON ok.offer_keyword_id = ks.offer_keyword_id
+          ORDER BY o.offer_id, ok.offer_keyword_id, ks.keyword_synonym_id;"""
+
     # drops
     DROP_FINGERPRINTS = "DROP TABLE IF EXISTS %s;" % FINGERPRINTS_TABLENAME
     DROP_SONGS = "DROP TABLE IF EXISTS %s;" % SONGS_TABLENAME
@@ -157,7 +224,11 @@ class SQLDatabase(Database):
         with self.cursor() as cur:
             cur.execute(self.CREATE_SONGS_TABLE)
             cur.execute(self.CREATE_FINGERPRINTS_TABLE)
-            cur.execute(self.DELETE_UNFINGERPRINTED)
+            cur.execute(self.CREATE_OFFERS_TABLE)
+            cur.execute(self.CREATE_SONG_OFFERS_TABLE)
+            cur.execute(self.CREATE_OFFER_KEYWORDS_TABLE)
+            cur.execute(self.CREATE_FINGERPRINTS_TABLE)
+            cur.execute(self.CREATE_KEYWORD_SYNONYMS_TABLE)
 
     def empty(self):
         """
@@ -226,6 +297,24 @@ class SQLDatabase(Database):
         with self.cursor(cursor_type=DictCursor) as cur:
             cur.execute(self.SELECT_SONG, (sid,))
             return cur.fetchone()
+
+    def get_song_offers(self):
+        """
+        Returns offers assotiated and organized by song.
+        """
+        with self.cursor(cursor_type=DictCursor) as cur:
+            cur.execute(self.SELECT_SONG_OFFERS)
+            for row in cur:
+                yield row
+
+    def get_keyword_offers(self):
+        """
+        Returns offers assotiated and organized by keyword list, including its synonyms.
+        """
+        with self.cursor(cursor_type=DictCursor) as cur:
+            cur.execute(self.SELECT_KEYWORD_OFFERS)
+            for row in cur:
+                yield row
 
     def insert(self, hash, sid, offset):
         """

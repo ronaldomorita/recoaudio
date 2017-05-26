@@ -7,7 +7,7 @@ import cgitb
 import gzip
 cgitb.enable()
 
-html = """
+html_sample_result = """
 <!DOCTYPE html>
 <head><META http-equiv="Content-Type" content="text/html; charset=UTF-8"></head>
 <html>
@@ -60,7 +60,7 @@ def application(environ, start_response):
     converted_now        = '<dd>' + separator.join(f for f in jresult['converted_now']       ).encode('utf-8') + '</dd>' if jresult['converted_now']        else textdefault
     fingerprinted_before = '<dd>' + separator.join(f for f in jresult['fingerprinted_before']).encode('utf-8') + '</dd>' if jresult['fingerprinted_before'] else textdefault
     fingerprinted_now    = '<dd>' + separator.join(f for f in jresult['fingerprinted_now']   ).encode('utf-8') + '</dd>' if jresult['fingerprinted_now']    else textdefault
-    response_body = html % {
+    response_body = html_sample_result % {
         'file_name':            file_name,
         'converted_before':     converted_before,
         'converted_now':        converted_now,

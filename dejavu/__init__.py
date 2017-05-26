@@ -197,6 +197,12 @@ class Dejavu(object):
     def recognize(self, recognizer, *options, **kwoptions):
         r = recognizer(self)
         return r.recognize(*options, **kwoptions)
+        
+    def load_song_offers(self):
+        return self.db.get_song_offers()
+
+    def load_keyword_offers(self):
+        return self.db.get_keyword_offers()
 
 
 def _fingerprint_worker(filename, limit=None, song_name=None):

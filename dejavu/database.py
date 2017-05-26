@@ -92,6 +92,18 @@ class Database(object):
         """
         pass
 
+    def get_song_offers(self):
+        """
+        Returns offers assotiated and organized by song.
+        """
+        pass
+
+    def get_keyword_offers(self):
+        """
+        Returns offers assotiated and organized by keyword list, including its synonyms.
+        """
+        pass
+
     @abc.abstractmethod
     def insert(self, hash, sid, offset):
         """
