@@ -1,3 +1,4 @@
+# coding: utf-8
 from dejavu.database import get_database, Database
 import dejavu.decoder as decoder
 import fingerprint

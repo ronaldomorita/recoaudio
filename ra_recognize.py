@@ -1,5 +1,6 @@
+# coding: utf-8
 import warnings
-import json
+import simplejson as json
 from dejavu import Dejavu
 from dejavu.recognize import FileRecognizer
 
@@ -14,7 +15,7 @@ class AudioSegment:
         self.recognition_result = json.loads('{}')
         
     def set_recognition_result(self, result):
-        self.recognition_result = json.loads(str(result).replace("'",'"'))
+        self.recognition_result = json.loads(json.dumps(result))
     
     def size(self):
         return self.end_position - self.start_position
@@ -25,12 +26,12 @@ class AudioSegment:
     def to_str(self):
         return "From %s to %s seconds and file %s, got song id %s, song name %s, confidence %s" %(
             str(self.start_position), str(self.end_position), self.file_name,
-            str(self.recognition_result['song_id']), str(self.recognition_result['song_name']), 
+            str(self.recognition_result['song_id']), str(self.recognition_result['song_name'].encode('utf-8')), 
             str(self.recognition_result['confidence']))
     
     def to_str_sum(self):
         return "%s (%s), from %s to %s seconds" %(
-            str(self.recognition_result['song_name']), str(self.recognition_result['confidence']), 
+            str(self.recognition_result['song_name'].encode('utf-8')), str(self.recognition_result['confidence']), 
             str(self.start_position), str(self.end_position))
 
         
@@ -94,7 +95,7 @@ class AudioSegmentHandler:
         self.song_offers_base = {}
         song_offers = self.djv.load_song_offers()
         for so in song_offers:
-            self.offers_base[so['offer_id']] = so['offer_content']
+            self.offers_base[so['offer_id']] = so['offer_content'].encode('utf-8')
             self.song_offers_base[so['song_id']] = so['offer_id']
         
     def generate_segments(self, filepath):
@@ -124,7 +125,7 @@ class AudioSegmentHandler:
             cp_results = {}
             max_confidence = 0
             for seg in cp_segments:
-                key = str(seg.recognition_result['song_id'])+'_'+seg.recognition_result['song_name']
+                key = str(seg.recognition_result['song_id'])+'_'+seg.recognition_result['song_name'].encode('utf-8')
                 value = cp_results[key] + seg.recognition_result['confidence'] if cp_results.has_key(key) else seg.recognition_result['confidence']
                 cp_results[key] = value
                 max_confidence = value if value > max_confidence else max_confidence
@@ -201,8 +202,8 @@ def load_keyword_offers():
         for row in resultset:
             offer_id = row['offer_id']
             if not keyword_offers.has_key(offer_id):
-                keyword_offers[offer_id] = KeywordOffer(offer_id,row['offer_content'])
-            keyword_offers[offer_id].append_synonym(row['offer_keyword_id'],row['keyword_synonym_value'])
+                keyword_offers[offer_id] = KeywordOffer(offer_id,row['offer_content'].encode('utf-8'))
+            keyword_offers[offer_id].append_synonym(row['offer_keyword_id'],row['keyword_synonym_value'].encode('utf-8'))
             
     offers_list = [ko.to_json_str() for ko in keyword_offers.values()]
     return '[' + ','.join(offers_list) +']'

@@ -116,7 +116,7 @@ def populate_recognition_response_body(ts, handler):
             segments_content += html_segment % {
                 'file_info':    str(s.start_position) + 's a ' + str(s.end_position) + 's',
                 'song_id':      str(s.recognition_result['song_id']),
-                'song_name':    str(s.recognition_result['song_name']),
+                'song_name':    str(s.recognition_result['song_name'].encode('utf-8')),
                 'confidence':   str(s.recognition_result['confidence']),
             }
         checkpoints_content += html_checkpoint % {
@@ -144,7 +144,7 @@ def populate_recognition_response_body(ts, handler):
         'checkpoints_content':  checkpoints_content,
         'notification_content': notification_content,
     }
-    return response_body.encode('utf-8')
+    return response_body
     
 def populate_sample_response_body(file_name,result):
     jresult = json.loads(result)
